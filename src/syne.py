@@ -46,6 +46,7 @@ parser.add_argument('-n', action='store_true')
 # parse args
 args = parser.parse_args()
 
+# helper fn
 def sanitize(string):
     # Only allow letters, numbers and '._- ' in string 
     return "".join( x for x in string if (x.isalnum() or x in "._- "))
@@ -77,64 +78,32 @@ else:
     path = args.path if args.path else default_path
     path = sanitize(path)
 
-    # flags 
-    # update filename if nesseceary
-    add_date_in_note = args.d
-    add_date_to_filename = args.df
-    add_date_to_path = args.dp
-    create_new_file = args.n
+    # # flags 
+    # # update filename if nesseceary
+    # add_date_in_note = args.d
+    # add_date_to_filename = args.df
+    # add_date_to_path = args.dp
+    # create_new_file = args.n
 
     full_path = os.path.join(os.path.relpath(pwd), path)
-
+    
     if not os.path.exists(full_path):
         try:
             os.makedirs(full_path)
         except OSError:
             print(f'The path {full_path} is not a valid path. Please enter a valid path.')
-        finally:
             print('Terminating program')
             exit()
 
     full_filename = f'{filename}{extension}'
-    cmd = f'metapad {os.path.join(pwd,path,full_filename)}'
+    full_path_and_filename = os.path.join(pwd,path,full_filename)
+
+    if not os.path.isfile(full_path_and_filename):
+        os.system(f'type NUL > {full_path_and_filename}')
+    cmd = f'metapad {full_path_and_filename}'
 
     try:
         os.system(cmd)
     except:
         print("Unexpected error:", sys.exc_info()[0])
-
-
-
-
-
-
-
-
-# if path not exist
-# create path
-# if create_new_file and file exists:
-    # modify filename
-# exe atom os.system(f'atom {}'.join)
-
-# if exists
-# with open('settings', 'r') as f:
-#     for line in f.readlines():
-#         print(line)
-
-# else
-# pwd = '.'
-
-# print(os.path.dirname('.'))
-# print(os.path.relpath(pwd, start=os.curdir))
-# pwd = os.path.relpath(pwd, start=os.curdir)
-# print(pwd)
-# pwd = os.path.realpath(pwd)
-# print(pwd)
-# pwd = os.path.relpath(pwd)
-# print(pwd)
-# pwd = os.path.relpath(pwd)
-# print(pwd)
-# print(os.path.exists(pwd))
-# print(os.path.join(pwd))
-# pwd = os.path.relpath(pwd)
-# print("---> ", os.path.abspath(os.path.relpath(pwd)))
+        exit()
