@@ -34,6 +34,20 @@ args = parser.parse_args()
 
 # helper fn
 def sanitize(string, _map=False):
+    '''
+    Return a sanitized String to prevent placing notes outside of Notes folder,
+    invalid filenames and invalid extensions by removing certain characters.
+
+    allowed characters: "._- "
+    allowed characters when _map is True: "/\\"
+
+    Paramaters:
+        string (str): String which is to be sanitized.
+        _map (bool): Optional boolean to indicate whether the string is folder.
+
+    Returns:
+        result (str): String without invalid characters.
+    '''
     allowed = "._- "
     if _map:
         allowed = "/\\"
@@ -41,6 +55,12 @@ def sanitize(string, _map=False):
     return "".join( x for x in string if (x.isalnum() or x in allowed))
 
 def list_all_notes(pwd): 
+    '''
+    Prints a list of the current notes in the Notes folder.
+    
+    Parameters:
+        pwd (str): Path of the current Notes folder.
+    '''
     for root, _, files in os.walk(pwd, topdown=True):
         for name in files:
             display_text = os.path.join(os.path.relpath(root,pwd), name)
@@ -100,9 +120,9 @@ elif args.filename:
             print('Terminating program')
             exit()
             
-
-    full_filename = f'{filename}.{extension}'
-    full_path_and_filename = os.path.join(os.path.realpath(pwd),path,full_filename)
+    full_path_and_filename = os.path.join(os.path.realpath(pwd),
+                                            path,
+                                            f'{filename}.{extension}')
     try:
         if not os.path.isfile(full_path_and_filename):
             # create a blank file
