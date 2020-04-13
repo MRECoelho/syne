@@ -17,3 +17,12 @@ Flags
 -mdp          add date to folder prepend
 -n            create new file, if <filename> exist, append date
 -sa           strictly add file to folder, do not create a new folder nor a new file.
+
+
+# Todo
+[ ] use pathlib instead of os if possible
+[ ] Refactor validation into functions
+[ ] Refactor into classes where necessary
+[ ] Fisnish docs
+[ ] Redo comments, remove unnecessary
+[ ] Add unittests
