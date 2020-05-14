@@ -59,7 +59,7 @@ class Syne():
         # self.args = self.arg_parser.parse_args()
         self.args = self.arg_parser.parse_args()
 
-    def _sanitize(self, to_be_sanitized, allowed="._- ", path=False):
+    def _sanitize(self, to_be_sanitized, allowed="._- ", _path=False):
         '''Return a sanitized String to prevent placing notes outside of Notes folder,
         invalid filenames and invalid extensions by removing certain characters.
 
@@ -72,14 +72,15 @@ class Syne():
         
         Returns:
             result (str): String without invalid characters.
-        '''
+            '''
 
         # ensure that user won't add notes to root using \ or / at the start of pathname
-        if path:
+        if _path:
             while not to_be_sanitized[0].isalnum():
                 to_be_sanitized = to_be_sanitized[1:]
-        
-        to_be_sanitized = "".join( c for c in to_be_sanitized if (c.isalnum() or c in allowed))
+
+        return "".join( c for c in to_be_sanitized if (c.isalnum() or c in allowed))
+        # print(to_be_sanitized)
 
     def _validate(self, arg_type, arg_value):
         ''' Helper function that validates the path, filename and extension.
@@ -107,17 +108,14 @@ class Syne():
         else:
             (self.filename, self.extension) = os.path.splitext(self.filename)
             self.extension = self.extension if self.extension else self.default_extension
-
         self.path = self.args.path if self.args.path and not self.args.path in '*./-\\' else self.default_path
 
-        settings = [['path', self.path],
-                    ['filename', self.filename, "_- "],
-                    ['extension', self.extension, ["/\\", True]]
-        ]
-
-        for arg_type, *remainder in settings:
-            self._sanitize(*remainder)
-            self._validate(arg_type, remainder[0])
+        self.path = self._sanitize(self.path, "/\\", True)
+        self.filename = self._sanitize(self.filename)
+        self.extension = self._sanitize(self.extension, "_- ")
+        self._validate('path', self.path)
+        self._validate('filename', self.filename)
+        self._validate('extension', self.extension)
 
     def _create_path(self):
         ''' Helper funtion that creates a new path in in the Notes folder if nessecary. Program
@@ -148,7 +146,7 @@ class Syne():
             be edited by the user. The purpose of this function is to prevent certain programs
             to ask the user (e.g. via a popup) wether the user wants to create a new file with 
             given name. This annoyance is circumvented by creating a empty file.
-            The program will exit is if it cannot create the placeholder.
+            The program will exit if it cannot create the placeholder.
         '''
         self.full_path_and_filename = os.path.join(self.full_path, f'{self.filename}.{self.extension}')
 
