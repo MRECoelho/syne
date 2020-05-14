@@ -211,7 +211,6 @@ class Syne():
 
         for k, v in self.config_parser._defaults.items():
             print(f'{k:10s}: {v}')
-        # for k, v in self.config_parser._defaults:
 
 syn = Syne()
 syn.run()
