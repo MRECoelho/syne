@@ -7,9 +7,15 @@ import sys
 class Syne():
     def __init__(self):
         self.config_parser = configparser.ConfigParser()
+        self.settings = dict()
+        self.settings.update(self._read_default_settings(self.config_parser))
+       
         self.arg_parser = argparse.ArgumentParser(description="Note making facilitator app.")
+        self.arguments = argparse.Namespace()
 
-    def _read_default_settings(self):
+        self.path, self.filename, self.extension = '', '', ''
+
+    def _read_default_settings(self, config_parser, _file='settings.ini', _type='DEFAULT'):
         ''' Helper function that reads default settings from settings.ini. The ini file shoudl be
             placed in the same location as the Syne app. If no ini file is specified, the program
             provides defaults of its own.
@@ -19,45 +25,55 @@ class Syne():
             & hardcoded defaults
 
         '''
+        settings = dict()
+        config_parser.read(_file)
+        default_config = config_parser[_type]
 
-        self.config_parser.read('settings.ini')
-        self.default_config = self.config_parser['DEFAULT']
-        self.pwd = self.default_config.get('pwd', ".") # cannot be changed throughout program
-        self.default_path = self.default_config.get('path', 'General')  
-        self.default_extension = self.default_config.get('extension', '.txt')
-        # self.default_dateformat = default_config.get('dateformat', 'YYYY-MM-DD')
-        self.default_editor = self.default_config.get('editor', 'metapad')
+        settings['default_settings_file'] = _file
+        settings['config_type'] = _type
+        settings['pwd'] = default_config.get('pwd', ".") # cannot be changed throughout program
+        settings['default_path']  = default_config.get('path', 'General')  
+        settings['default_extension'] = default_config.get('extension', '.txt')
+        settings['default_editor'] = default_config.get('editor', 'notepad')
+        return settings        
     
-    def _parse_argmuments(self):
+    def _parse_argmuments(self, arg_parser, namespace):
+        # should return parser and the function should be setting up the parser
+
         ''' Helper function that specifies the standard for parsing arguments and returns the parsed
             results. To see all possible arguments use the -'syne -h' or 'syne --help'.
+
+            Parameters:
+                TODO
         
-            Returns: Parsed arguments as ArgumentParser object. 
+            Returns: 
+                Parsed arguments as ArgumentParser object. 
         '''
 
-        self.arg_parser.add_argument('-d','--default', 
+        arg_parser.add_argument('-d','--default', 
                                 action = 'store_true', 
                                 help = 'Show default settings')
-        self.arg_parser.add_argument('-l','--list', 
+        arg_parser.add_argument('-l','--list', 
                                 action = 'store_true', 
                                 help = 'List all notes')
-        self.arg_parser.add_argument('filename',
+        arg_parser.add_argument('filename',
                                 nargs = '?', 
                                 metavar = 'file', 
                                 type = str, 
                                 help = 'Filename with or without extension')
-        self.arg_parser.add_argument('path', 
+        arg_parser.add_argument('path', 
                                 nargs = '?', 
                                 metavar = 'path', 
                                 type = str, 
                                 help = 'Relative path for file')
-        self.arg_parser.add_argument('extension', 
+        arg_parser.add_argument('extension', 
                                 nargs = '?',
                                 metavar = 'extension', 
                                 type = str, 
                                 help = 'Extension of the file')
+        
         # self.args = self.arg_parser.parse_args()
-        self.args = self.arg_parser.parse_args()
+        arg_parser.parse_args(namespace=namespace)
 
     def _sanitize(self, to_be_sanitized, allowed="._- ", _path=False):
         '''Return a sanitized String to prevent placing notes outside of Notes folder,
@@ -66,9 +82,10 @@ class Syne():
 
         Parameters:
             to_be_sanitized (str): String which is to be sanitized.
-            allowed (str): Default: "._- ". String that specifies explicitly which other characters
+            allowed (str):  Default: "._- ". String that specifies explicitly which other characters
                             are allow. The default can be overrriden by specifying this parameter in 
                             the function call.
+            _path (bool):   TODO
         
         Returns:
             result (str): String without invalid characters.
@@ -82,15 +99,21 @@ class Syne():
         return "".join( c for c in to_be_sanitized if (c.isalnum() or c in allowed))
         # print(to_be_sanitized)
 
-    def _validate(self, arg_type, arg_value):
-        ''' Helper function that validates the path, filename and extension.
+    def _validate(self, arg_type, arg_value, minimal_chars=1):
+        ''' Helper function that validates string for further use. Here a string must be of atleast
+        1 character by default defined as the minimal_chars parameter. Changing this parameter 
+        allows the user to create files without an extension or enforce more descriptive strings by 
+        using a larger number. 
 
-            TODO:
-                Is this really a seperate function? 
+        Parameters:
+            TODO
+
+        Returns:
+            TODO
 
         '''
 
-        if len(arg_value) < 1:
+        if len(arg_value) < minimal_chars:
             # raise ValueError(f'hi')
             print(f"Please enter a valid {arg_type}, '{arg_value}' is not a valid one.")
             # print(Please enter a valid {arg_type}, {arg_value} is not a valid one.)
@@ -98,24 +121,31 @@ class Syne():
     
     def _setup_vars(self):
         '''
-            missing docs
+            TODO
         '''
         
-        self.filename = self.args.filename
-        if self.args.extension:
-            self.extension = self.args.extension
-            self.filename = self.filename[:-1] if self.filename.endswith('.') else self.filename # disables '<f>..<e>'
+        filename = self.arguments.filename
+        if self.arguments.extension:
+            extension = self.arguments.extension
+            filename = filename[:-1] if filename.endswith('.') else filename # disables '<f>..<e>'
         else:
-            (self.filename, self.extension) = os.path.splitext(self.filename)
-            self.extension = self.extension if self.extension else self.default_extension
-        self.path = self.args.path if self.args.path and not self.args.path in '*./-\\' else self.default_path
+            (filename, extension) = os.path.splitext(filename)
+            extension = extension if extension else self.settings['default_extension']
+        path = self.arguments.path if self.arguments.path and not self.arguments.path in '*./-\\' else self.settings['default_path']
 
-        self.path = self._sanitize(self.path, "/\\", True)
-        self.filename = self._sanitize(self.filename)
-        self.extension = self._sanitize(self.extension, "_- ")
-        self._validate('path', self.path)
-        self._validate('filename', self.filename)
-        self._validate('extension', self.extension)
+        path = self._sanitize(path, "/\\", True)
+        filename = self._sanitize(filename)
+        extension = self._sanitize(extension, "_- ")
+        # using a dict the following can be a lot nicer -> _validate(K: V)
+        
+
+        for validation_type, value in {'path': path, 'filename': filename, 'extension': extension}.items():
+            self._validate(validation_type, value)
+        # self._validate('path', path)
+        # self._validate('filename', filename)
+        # self._validate('extension', extension)
+        return path, filename, extension
+
 
     def _create_path(self):
         ''' Helper funtion that creates a new path in in the Notes folder if nessecary. Program
@@ -125,7 +155,7 @@ class Syne():
                 full_path (str): String of the full path from root.
         ''' 
 
-        self.full_path = os.path.join(os.path.relpath(self.pwd), self.path)
+        self.full_path = os.path.join(os.path.relpath(self.settings['pwd']), self.path)
     
         if not os.path.exists(self.full_path):
             try:
@@ -162,7 +192,8 @@ class Syne():
         ''' TODO:
             a little more stuff here
         '''
-        cmd = f'{self.default_editor} {self.full_path_and_filename}'
+        # print(self.settings['default_editor'])
+        cmd = f'{self.settings["default_editor"]} {self.full_path_and_filename}'
         try:
             os.system(cmd)
         except:
@@ -171,18 +202,18 @@ class Syne():
 
 
     def run(self):
-        ''' TODO:
-                main funtion
+        ''' 
+        TODO
+            
         '''
-        self._read_default_settings()
-        self._parse_argmuments()
+        self._parse_argmuments(self.arg_parser, self.arguments)
 
-        if self.args.default:
+        if self.arguments.default:
             self.show_default_settings()
-        elif self.args.list:
+        elif self.arguments.list:
             self.show_notes()
-        elif self.args.filename:
-            self._setup_vars()
+        elif self.arguments.filename:
+            self.path, self.filename, self.extension = self._setup_vars()
             self._create_path()
             self._create_file_placeholder()
             self._run_app()
@@ -192,9 +223,10 @@ class Syne():
     def show_notes(self):
         ''' List all stored notes in Notes folder.
         '''
-        for root, _, files in os.walk(self.pwd, topdown=True):
+        pwd = self.settings['pwd']
+        for root, _, files in os.walk(pwd, topdown=True):
             for name in files:
-                display_text = os.path.join(os.path.relpath(root,self.pwd), name)
+                display_text = os.path.join(os.path.relpath(root, pwd), name)
                 print(display_text)
 
     def help(self):
