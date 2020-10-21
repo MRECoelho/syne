@@ -5,23 +5,37 @@ import sys
 
 class Syne_Config:
     def __init__(self, config_file='config.ini', config_type='DEFAULT'):
-        ''' ... '''
+        ''' During initialization of the class the config from the ini file is read and the argument
+            parser is setup. By default is search for 'config.ini' in the app main folder, but this 
+            can be an arbitrary location. The class can be initialized with different config_types 
+            in order to make the app more flexible.
+
+            Parameters:
+                config_file: string
+                    Name of config file. See the readme on how to configure such file. By default it
+                    is set to 'config.ini'.
+                config_type: string 
+                    Config file section that needs to be read. By default it is set to 'DEFAULT'
+        '''
         self.config = self.config_setup(config_file, config_type)
-        print(self.config)
         self.argument_parser = self.argument_parser_setup()
 
     def config_setup(self, config_file, config_type):
         ''' Initialize the self.defaults dictionary by reading the default settings. These default 
             settings can dictate where notes should be stored, what extension to use for the files
             and what editor should be used by reading the settings.ini file that should be place in 
-            the same directory as the program. If no settings file is provided hardcoded defaults 
+            the same directory as the program. If no config_file is provided hardcoded defaults 
             are used.
 
             Parameters:
-                TODO
-            
+                config_file: string
+                     Name of config file. See the readme on how to configure such file.
+                config_type: string
+                     Config file section that needs to be read.
+
             Returns:
-                Configuration dictionary
+                config_defaults: dict
+                    Configuration dictionary con
         '''
         config = configparser.ConfigParser()
         config.read(config_file)
@@ -30,21 +44,18 @@ class Syne_Config:
                                 'path': 'General', 
                                 'extension' : '.txt', 
                                 'editor': 'notepad'
-        }
+                            }
         for key, val in hardcoded_defaults.items():
             if key not in config_defaults or config_defaults[key] == '':
                 config_defaults[key] = val
         return config_defaults
 
     def argument_parser_setup(self):
-        ''' Helper function that setups the argument parser and returns a parser object. The main 
-            parser logic is defined here. TODO
+        ''' Function that setups the argument parser and returns a parser object. The main 
+            parser logic is defined here.
 
-            Parameters:
-                TODO
-        
-            Returns: 
-                ArgumentParser object. 
+            Returns:
+                argument_parser: ArgumentParser object
         '''
 
         argument_parser = argparse.ArgumentParser(description="Note making facilitator app.")
@@ -166,34 +177,39 @@ class Syne_Config:
 
     def run(self):
         args = self.argument_parser.parse_args()
-        args = vars(args)
-        path_filename_extension = self.setup_variables(args, self.config)
+        if args.default:
+            self.show_default_settings()
+        elif args.list:
+            self.list_notes()
+        else:    
+            args = vars(args)
+            path_filename_extension = self.setup_variables(args, self.config)
 
-        settings = {'path': 
-                        {
-                            'blacklisted_chars': ' `><',
-                            'min_chars': 1
-                        },
-                    'filename':
-                        {
-                            'blacklisted_chars': '/\\.`><',
-                            'min_chars': 1
-                        },
-                    'extension':
-                        {
-                            'blacklisted_words': ['exe', 'msi'],
-                            'min_chars': 1
+            settings = {'path': 
+                            {
+                                'blacklisted_chars': ' `><',
+                                'min_chars': 1
+                            },
+                        'filename':
+                            {
+                                'blacklisted_chars': '/\\.`><',
+                                'min_chars': 1
+                            },
+                        'extension':
+                            {
+                                'blacklisted_words': ['exe', 'msi'],
+                                'min_chars': 1
+                            }
                         }
-                    }
 
-        self.validation(path_filename_extension, settings)
-        self.config.update(path_filename_extension)
-        full_path_and_filename = self.create_full_path_and_filename(self.config)
-        self.config.update(full_path_and_filename)
-        self.create_file_placeholder(self.config)
-        self.create_note(self.config)
+            self.validation(path_filename_extension, settings)
+            self.config.update(path_filename_extension)
+            full_path_and_filename = self.create_full_path_and_filename(self.config)
+            self.config.update(full_path_and_filename)
+            self.create_file_placeholder(self.config)
+            self.create_note(self.config)
 
-    def show_notes(self):
+    def list_notes(self):
         ''' List all stored notes in Notes folder.
         '''
         pwd = self.config['pwd']
@@ -202,17 +218,17 @@ class Syne_Config:
                 display_text = os.path.join(os.path.relpath(root, pwd), name)
                 print(display_text)
 
-    def help(self):
-        ''' Print help.
-        '''
-        self.argument_parser.print_help()
+    # def help(self):
+    #     ''' Print help.
+    #     '''
+    #     self.argument_parser.print_help()
 
     def show_default_settings(self):
         ''' Print default settings and place of ini file
             If none specified, print hardcoded defaults
         '''
 
-        for k, v in self.config:
+        for k, v in self.config.items():
             print(f'{k:10s}: {v}')
 
 s = Syne_Config()
