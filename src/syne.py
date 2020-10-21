@@ -180,12 +180,11 @@ class Syne_Config:
         if args.default:
             self.show_default_settings()
         elif args.list:
-            self.list_notes()
+            self.list_notes(self.config)
         else:    
             args = vars(args)
             path_filename_extension = self.setup_variables(args, self.config)
-
-            settings = {'path': 
+            validation_rules = {'path': 
                             {
                                 'blacklisted_chars': ' `><',
                                 'min_chars': 1
@@ -202,17 +201,17 @@ class Syne_Config:
                             }
                         }
 
-            self.validation(path_filename_extension, settings)
+            self.validation(path_filename_extension, validation_rules)
             self.config.update(path_filename_extension)
             full_path_and_filename = self.create_full_path_and_filename(self.config)
             self.config.update(full_path_and_filename)
             self.create_file_placeholder(self.config)
             self.create_note(self.config)
 
-    def list_notes(self):
+    def list_notes(self, config):
         ''' List all stored notes in Notes folder.
         '''
-        pwd = self.config['pwd']
+        pwd = config['pwd']
         for root, _, files in os.walk(pwd, topdown=True):
             for name in files:
                 display_text = os.path.join(os.path.relpath(root, pwd), name)
