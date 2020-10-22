@@ -1,3 +1,4 @@
+import subprocess
 import configparser
 import argparse
 import os
@@ -203,7 +204,6 @@ class Syne:
         '''
         cmd = f"{config['editor']} {config['full_path_and_filename']}"
         print(cmd)
-        import subprocess
         sp = subprocess
         try:
             sp.run(cmd)
