@@ -3,7 +3,7 @@ import argparse
 import os
 import sys
 
-class Syne_Config:
+class Syne:
     def __init__(self, config_file='config.ini', config_type='DEFAULT'):
         ''' During initialization of the class the config from the ini file is read and the argument
             parser is setup. By default is search for 'config.ini' in the app main folder, but this 
@@ -42,14 +42,14 @@ class Syne_Config:
         config = configparser.ConfigParser()
         config.read(config_file)
         config_defaults = config.defaults()
-        hardcoded_defaults = {  'pwd':'.', 
-                                'path': 'General', 
-                                'extension' : '.txt', 
-                                'editor': 'notepad'
-                            }
-        for key, val in hardcoded_defaults.items():
-            if key not in config_defaults or config_defaults[key] == '':
-                config_defaults[key] = val
+        # hardcoded_defaults = {  'pwd':'.', 
+        #                         'path': '', 
+        #                         'extension' : '.txt', 
+        #                         'editor': 'notepad'
+        #                     }
+        # for key, val in hardcoded_defaults.items():
+        #     if key not in config_defaults or config_defaults[key] == '':
+        #         config_defaults[key] = val
         return config_defaults
 
     def argument_parser_setup(self):
@@ -253,5 +253,6 @@ class Syne_Config:
         for k, v in self.config.items():
             print(f'{k:10s}: {v}')
 
-s = Syne_Config()
-s.run()
+if __name__ == "__main__":
+    s = Syne()
+    s.run()
