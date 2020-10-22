@@ -35,7 +35,9 @@ class Syne_Config:
 
             Returns:
                 config_defaults: dict
-                    Configuration dictionary con
+                    Configuration dictionary containing basic configuration settings like the Notes
+                    folder working directory (pwd), the default path for notes (path), the default 
+                    extension of the note (extension) and the default text editor (editor).
         '''
         config = configparser.ConfigParser()
         config.read(config_file)
@@ -52,10 +54,12 @@ class Syne_Config:
 
     def argument_parser_setup(self):
         ''' Function that setups the argument parser and returns a parser object. The main 
-            parser logic is defined here.
+            parser logic is defined here using the parsearg library. If more options are needed
+            this is the place to add them.
 
             Returns:
                 argument_parser: ArgumentParser object
+                    This object contains the setup for the parser. 
         '''
 
         argument_parser = argparse.ArgumentParser(description="Note making facilitator app.")
@@ -83,7 +87,23 @@ class Syne_Config:
         return argument_parser
     
     def setup_variables(self, args, config):
-        ''' '''
+        ''' This app heavily revolves around three major variables, the placement of the note 
+            (should it be placed in the default folder? Somehwere down a hierachy?) the filename of
+            the note and the extenion of the note. Since some flexibility (short hand solution) 
+            is implemented in the usage of the command line interface some additional steps are 
+            needed to read the arguments properly.
+
+            Parameters:
+                args: dict
+                    ...
+                config: dict
+                    ...
+            
+            Returns:
+                dict
+                    ...
+
+        '''
 
         if not args['extension']:
             (filename, extension) = os.path.splitext(args['filename'])
@@ -104,6 +124,9 @@ class Syne_Config:
         return {'path': path, 'filename': filename, 'extension': extension}
     
     def validation(self, args, validation_rules):
+        """
+            ...
+        """
         for variable, rules_dict in validation_rules.items():
             if args[variable]:
                 rules = ['blacklisted_words', 'blacklisted_chars', 'max_chars', 'min_chars']
