@@ -42,6 +42,18 @@ class Syne:
         config = configparser.ConfigParser()
         config.read(config_file)
         config_defaults = config.defaults()
+        if not config_defaults['editor']:
+            editor = os.getenv('EDITOR')
+            print(editor)
+            if editor:
+                config_defaults['editor'] = editor
+            else:
+                print('WARNING: No default editor is specified, please specify one in the ini file')
+                exit()
+        if not config_defaults['extension']:
+            print('WARNING: No default extension is specified, please specify one in the ini file')
+            exit()
+        
         # hardcoded_defaults = {  'pwd':'.', 
         #                         'path': '', 
         #                         'extension' : '.txt', 
@@ -189,13 +201,26 @@ class Syne:
         ''' TODO:
             a little more stuff here
         '''
-        # print(self.settings['default_editor'])
         cmd = f"{config['editor']} {config['full_path_and_filename']}"
+        print(cmd)
+        import subprocess
+        sp = subprocess
         try:
-            os.system(cmd)
+            sp.run(cmd)
+        # print(result)   
+        # print(p.stdout)
+        # print(p.stderr)
+        # try:
+        #     # os.system(cmd)
         except:
-            print(f"Unexpected error running '{cmd}': {sys.exc_info()[0]}")
-            exit()
+            try:
+                sp.run(config['editor'])
+            except:
+                print(f"{config['editor']} is not recognized as an editor, please configure one in the ini file ")
+                exit()
+            else:
+                print(f"Unexpected error running '{cmd}'")
+                exit()
 
 
     def run(self):
