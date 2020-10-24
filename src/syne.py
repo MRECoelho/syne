@@ -40,12 +40,13 @@ class Syne:
                     folder working directory (pwd), the default path for notes (path), the default 
                     extension of the note (extension) and the default text editor (editor).
         '''
+
         config = configparser.ConfigParser()
         config.read(config_file)
         config_defaults = config.defaults()
         if not config_defaults['editor']:
             editor = os.getenv('EDITOR')
-            print(editor)
+
             if editor:
                 config_defaults['editor'] = editor
             else:
@@ -54,15 +55,6 @@ class Syne:
         if not config_defaults['extension']:
             print('WARNING: No default extension is specified, please specify one in the ini file')
             exit()
-        
-        # hardcoded_defaults = {  'pwd':'.', 
-        #                         'path': '', 
-        #                         'extension' : '.txt', 
-        #                         'editor': 'notepad'
-        #                     }
-        # for key, val in hardcoded_defaults.items():
-        #     if key not in config_defaults or config_defaults[key] == '':
-        #         config_defaults[key] = val
         return config_defaults
 
     def argument_parser_setup(self):
@@ -114,7 +106,7 @@ class Syne:
             
             Returns:
                 dict
-                    ...
+                    {'path': path, 'filename': filename, 'extension': extension}
 
         '''
 
@@ -137,9 +129,18 @@ class Syne:
         return {'path': path, 'filename': filename, 'extension': extension}
     
     def validation(self, args, validation_rules):
-        """
-            ...
-        """
+        ''' This function ensures that the strings for path, filename and extension are valid given
+            certain validation rules. This function provides some protection against unintended 
+            command that could otherwise be a potential problem. This function is not fool proof
+            and is only intended to help the user in case of mistakes/typo's.
+
+            Parameters:
+                args: dict
+                    ...
+                validation_rules: dict
+                    ...
+        '''
+
         for variable, rules_dict in validation_rules.items():
             if args[variable]:
                 rules = ['blacklisted_words', 'blacklisted_chars', 'max_chars', 'min_chars']
@@ -161,8 +162,21 @@ class Syne:
         return args
     
     def create_full_path_and_filename(self, config):
+        ''' Helper function that checks if the given path where the note has to be stored already
+            exists. If not, the destination is created. In case an invalid path is given, the app
+            will terminate. If succesful the function returns the full path name and filename for 
+            further use.
+
+            Parameters:
+                config: dict
+                    ...
+            
+            Returns:
+                dict
+                    ...
+        '''
+
         full_path = os.path.join(os.path.relpath(config['pwd']), config['path'])
-    
         if not os.path.exists(full_path):
             try:
                 os.makedirs(full_path)
@@ -188,7 +202,6 @@ class Syne:
             The program will exit if it cannot create the placeholder.
         '''
         
-        print(config['full_path_and_filename'])
         try:
             if not os.path.isfile(config['full_path_and_filename']):
                 # create a blank file
@@ -199,28 +212,16 @@ class Syne:
     
 
     def create_note(self, config):
-        ''' TODO:
-            a little more stuff here
+        ''' TODO: needs to be rewritten
         '''
         cmd = f"{config['editor']} {config['full_path_and_filename']}"
-        print(cmd)
-        sp = subprocess
         try:
-            sp.run(cmd)
-        # print(result)   
-        # print(p.stdout)
-        # print(p.stderr)
-        # try:
-        #     # os.system(cmd)
+            subprocess.run(cmd)
+            print(f"Created/Edited note in {config['pwd']}/{config['path']} with filename \
+{config['filename']}.{config['extension']}")
         except:
-            try:
-                sp.run(config['editor'])
-            except:
-                print(f"{config['editor']} is not recognized as an editor, please configure one in the ini file ")
-                exit()
-            else:
-                print(f"Unexpected error running '{cmd}'")
-                exit()
+            print(f"Unexpected error running '{cmd}'")
+            exit()
 
 
     def run(self):
@@ -249,7 +250,7 @@ class Syne:
                             }
                         }
 
-            self.validation(path_filename_extension, validation_rules)
+            path_filename_extension = self.validation(path_filename_extension, validation_rules)
             self.config.update(path_filename_extension)
             full_path_and_filename = self.create_full_path_and_filename(self.config)
             self.config.update(full_path_and_filename)
@@ -257,23 +258,16 @@ class Syne:
             self.create_note(self.config)
 
     def list_notes(self, config):
-        ''' List all stored notes in Notes folder.
-        '''
+        ''' Print all stored notes in Notes (as specified in the ini file) folder.'''
+
         pwd = config['pwd']
         for root, _, files in os.walk(pwd, topdown=True):
             for name in files:
                 display_text = os.path.join(os.path.relpath(root, pwd), name)
                 print(display_text)
 
-    # def help(self):
-    #     ''' Print help.
-    #     '''
-    #     self.argument_parser.print_help()
-
     def show_default_settings(self):
-        ''' Print default settings and place of ini file
-            If none specified, print hardcoded defaults
-        '''
+        ''' Print config from ini file. '''
 
         for k, v in self.config.items():
             print(f'{k:10s}: {v}')
