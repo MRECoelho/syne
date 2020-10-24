@@ -9,7 +9,9 @@ class Syne:
         ''' During initialization of the class the config from the ini file is read and the argument
             parser is setup. By default is search for 'config.ini' in the app main folder, but this 
             can be an arbitrary location. The class can be initialized with different config_types 
-            in order to make the app more flexible.
+            in order to make the app more flexible. Lastly the validation rules for the path, 
+            filename and extension are defined here. This is optional and is meant to help the user
+            not make harmful mistakes.
 
             Parameters:
                 config_file: string
@@ -20,6 +22,22 @@ class Syne:
         '''
         self.config = self.config_setup(config_file, config_type)
         self.argument_parser = self.argument_parser_setup()
+        self.validation_rules = {'path': 
+                            {
+                                'blacklisted_chars': ' `><',
+                                'min_chars': 1
+                            },
+                        'filename':
+                            {
+                                'blacklisted_chars': '/\\.`><',
+                                'min_chars': 1
+                            },
+                        'extension':
+                            {
+                                'blacklisted_words': ['exe', 'msi'],
+                                'min_chars': 1
+                            }
+                        }
 
     def config_setup(self, config_file, config_type):
         ''' Initialize the self.defaults dictionary by reading the default settings. These default 
@@ -46,7 +64,6 @@ class Syne:
         config_defaults = config.defaults()
         if not config_defaults['editor']:
             editor = os.getenv('EDITOR')
-
             if editor:
                 config_defaults['editor'] = editor
             else:
@@ -91,7 +108,7 @@ class Syne:
                                 help = 'Extension of the file')
         return argument_parser
     
-    def setup_variables(self, args, config):
+    def setup_variables(self, args):
         ''' This app heavily revolves around three major variables, the placement of the note 
             (should it be placed in the default folder? Somehwere down a hierachy?) the filename of
             the note and the extenion of the note. Since some flexibility (short hand solution) 
@@ -101,34 +118,31 @@ class Syne:
             Parameters:
                 args: dict
                     ...
-                config: dict
-                    ...
             
             Returns:
                 dict
                     {'path': path, 'filename': filename, 'extension': extension}
-
         '''
 
         if not args['extension']:
             (filename, extension) = os.path.splitext(args['filename'])
             if not extension:
-                extension = config['extension']
+                extension = self.config['extension']
         else:
             filename = args['filename']
             extension = args['extension']
         if extension.startswith('.'):
             extension = extension[1:]
         if not args['path']:
-            path = config['path']
+            path = self.config['path']
         else:
             if 'path_alias' in config:
-                path = args['path'][0].replace(config['path_alias'], config['path'], 1) + args['path'][1:]
+                path = args['path'][0].replace(self.config['path_alias'], self.config['path'], 1) + args['path'][1:]
             else:
                 path = args['path']
         return {'path': path, 'filename': filename, 'extension': extension}
     
-    def validation(self, args, validation_rules):
+    def validation(self, args):
         ''' This function ensures that the strings for path, filename and extension are valid given
             certain validation rules. This function provides some protection against unintended 
             command that could otherwise be a potential problem. This function is not fool proof
@@ -141,7 +155,7 @@ class Syne:
                     ...
         '''
 
-        for variable, rules_dict in validation_rules.items():
+        for variable, rules_dict in self.validation_rules.items():
             if args[variable]:
                 rules = ['blacklisted_words', 'blacklisted_chars', 'max_chars', 'min_chars']
                 for rule in rules:
@@ -161,7 +175,7 @@ class Syne:
                                 exit()
         return args
     
-    def create_full_path_and_filename(self, config):
+    def create_full_path_and_filename(self):
         ''' Helper function that checks if the given path where the note has to be stored already
             exists. If not, the destination is created. In case an invalid path is given, the app
             will terminate. If succesful the function returns the full path name and filename for 
@@ -176,7 +190,7 @@ class Syne:
                     ...
         '''
 
-        full_path = os.path.join(os.path.relpath(config['pwd']), config['path'])
+        full_path = os.path.join(os.path.relpath(self.config['pwd']), self.config['path'])
         if not os.path.exists(full_path):
             try:
                 os.makedirs(full_path)
@@ -190,11 +204,10 @@ class Syne:
                 print("Unexpected error:", sys.exc_info()[0])
                 print('Terminating program')
                 exit()
-        full_path_and_filename = os.path.join(full_path, f"{config['filename']}.{config['extension']}")
-
+        full_path_and_filename = os.path.join(full_path, f"{self.config['filename']}.{self.config['extension']}")
         return {'full_path_and_filename': full_path_and_filename}
     
-    def create_file_placeholder(self, config):
+    def create_file_placeholder(self):
         ''' Helper function to create a placeholder file that will eventually be the one the will
             be edited by the user. The purpose of this function is to prevent certain programs
             to ask the user (e.g. via a popup) wether the user wants to create a new file with 
@@ -203,64 +216,45 @@ class Syne:
         '''
         
         try:
-            if not os.path.isfile(config['full_path_and_filename']):
+            if not os.path.isfile(self.config['full_path_and_filename']):
                 # create a blank file
-                os.system(f"type NUL > {config['full_path_and_filename']}")
+                os.system(f"type NUL > {self.config['full_path_and_filename']}")
         except:
             print("Unexpected error:", sys.exc_info()[0])
             exit()
     
 
-    def create_note(self, config):
+    def create_note(self):
         ''' TODO: needs to be rewritten
         '''
-        cmd = f"{config['editor']} {config['full_path_and_filename']}"
+        cmd = f"{self.config['editor']} {self.config['full_path_and_filename']}"
         try:
             subprocess.run(cmd)
-            print(f"Created/Edited note in {config['pwd']}/{config['path']} with filename \
-{config['filename']}.{config['extension']}")
+            print(f"Created/Edited note in {self.config['pwd']}/{self.config['path']} with filename {self.config['filename']}.{self.config['extension']}")
         except:
             print(f"Unexpected error running '{cmd}'")
             exit()
-
 
     def run(self):
         args = self.argument_parser.parse_args()
         if args.default:
             self.show_default_settings()
         elif args.list:
-            self.list_notes(self.config)
-        else:    
-            args = vars(args)
-            path_filename_extension = self.setup_variables(args, self.config)
-            validation_rules = {'path': 
-                            {
-                                'blacklisted_chars': ' `><',
-                                'min_chars': 1
-                            },
-                        'filename':
-                            {
-                                'blacklisted_chars': '/\\.`><',
-                                'min_chars': 1
-                            },
-                        'extension':
-                            {
-                                'blacklisted_words': ['exe', 'msi'],
-                                'min_chars': 1
-                            }
-                        }
-
-            path_filename_extension = self.validation(path_filename_extension, validation_rules)
+            self.list_notes()
+        else:
+            args = vars(args) # convert to dict
+            path_filename_extension = self.setup_variables(args)
+            path_filename_extension = self.validation(path_filename_extension)
             self.config.update(path_filename_extension)
-            full_path_and_filename = self.create_full_path_and_filename(self.config)
+            full_path_and_filename = self.create_full_path_and_filename()
             self.config.update(full_path_and_filename)
-            self.create_file_placeholder(self.config)
-            self.create_note(self.config)
+            self.create_file_placeholder()
+            self.create_note()
 
-    def list_notes(self, config):
+    def list_notes(self):
         ''' Print all stored notes in Notes (as specified in the ini file) folder.'''
 
-        pwd = config['pwd']
+        pwd = self.config['pwd']
         for root, _, files in os.walk(pwd, topdown=True):
             for name in files:
                 display_text = os.path.join(os.path.relpath(root, pwd), name)
@@ -271,6 +265,7 @@ class Syne:
 
         for k, v in self.config.items():
             print(f'{k:10s}: {v}')
+
 
 if __name__ == "__main__":
     s = Syne()
