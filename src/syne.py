@@ -136,7 +136,7 @@ class Syne:
         if not args['path']:
             path = self.config['path']
         else:
-            if 'path_alias' in config:
+            if 'path_alias' in self.config:
                 path = args['path'][0].replace(self.config['path_alias'], self.config['path'], 1) + args['path'][1:]
             else:
                 path = args['path']
